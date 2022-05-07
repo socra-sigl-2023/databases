@@ -36,8 +36,11 @@ TO '/tmp/producer.csv' DELIMITER ';' CSV HEADER;
 COPY (SELECT DISTINCT (entreprise_id) as external_id, coordonnees_gps as gps_point, entreprise_adresse as street, entreprise_code_postal as postal_code from "produit-sud-de-france" WHERE coordonnees_gps is not null)
 TO '/tmp/address_from_producer_eid.csv' DELIMITER ';' CSV HEADER;
 
-COPY (SELECT produit_id as external_id, produit_nom as name, url_image, produit_bio as bio, entreprise_id as producer_external_id, ROUND(CAST(random_price_for(produit_categorie1) AS NUMERIC),2) as price from "produit-sud-de-france")
+COPY (SELECT produit_id as external_id, produit_nom as name, url_image, produit_bio as bio, entreprise_id as producer_external_id, ROUND(CAST(random_price_for(produit_categorie1) AS NUMERIC),2) as price, produit_categorie1 as category_name from "produit-sud-de-france")
 TO '/tmp/product.csv' DELIMITER ';' CSV HEADER;
 
 COPY(SELECT DISTINCT produit_categorie1 as name from "produit-sud-de-france")
 TO '/tmp/category.csv' DELIMITER ';' CSV HEADER;
+
+COPY(SELECT p.id as product_id, c.id as category_id FROM product AS p JOIN category AS c ON c.name = p.category_name)
+TO '/tmp/product_id_category_id.csv' DELIMITER ';' CSV HEADER;

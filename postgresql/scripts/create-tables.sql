@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS customer_address CASCADE;
 DROP TABLE IF EXISTS producer_address CASCADE;
 DROP TABLE IF EXISTS address CASCADE;
 DROP TABLE IF EXISTS customer CASCADE;
+DROP TABLE IF EXISTS product_category CASCADE;
 
 CREATE TABLE producer (
     id SERIAL PRIMARY KEY,
@@ -47,7 +48,7 @@ CREATE TABLE customer (
 CREATE TABLE product_discount (
     product_id INT REFERENCES product(id) ON DELETE NO ACTION,
     discount FLOAT,
-    active_until DATE
+    valid_until DATE
 );
 
 CREATE TABLE customer_address(
@@ -59,3 +60,8 @@ CREATE TABLE producer_address(
     address_id INT REFERENCES address(id) ON DELETE NO ACTION,
     producer_id INT REFERENCES producer(id) ON DELETE NO ACTION
 );
+
+CREATE TABLE product_category(
+    product_id INT REFERENCES product(id) ON DELETE NO ACTION,
+    category_id INT REFERENCES category(id) ON DELETE NO ACTION
+)

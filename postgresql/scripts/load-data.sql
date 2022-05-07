@@ -21,3 +21,9 @@ FROM '/tmp/scripts/data/customer_id_address_id.csv' DELIMITER ';' CSV HEADER;
 
 COPY producer_address(address_id, producer_id)
 FROM '/tmp/scripts/data/producer_address.csv' DELIMITER ';' CSV HEADER;
+
+COPY product_discount(product_id, discount, valid_until)
+FROM '/tmp/scripts/data/product_discount.csv' DELIMITER ';' CSV HEADER;
+
+COPY product_category(product_id,category_id)
+FROM '/tmp/scripts/data/product_id_category_id.csv' DELIMITER ';' CSV HEADER;

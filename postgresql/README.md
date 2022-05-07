@@ -2,12 +2,12 @@
 
 [Postgres](https://www.postgresql.org) is an open source relationnal database managment system (RDBMS).
 
-It's totally free and is use in production by many. This is the brother of MySQL/MariaDB.
+It's totally free and is use in production by many.
 
 In this workshop, you will:
-- Create Garlaxy's database schema
+- Create Socrate's relational database schema
 - Import test data we've created for you
-- Visualize this data using [pgAdmin](https://www.pgadmin.org)
+- Visualize this data using [pgAdmin4](https://www.pgadmin.org)
 - Query some data from the web API of previous workshop
 
 ## Step 1: Run Postgres and pgadmin on your computer
@@ -26,18 +26,7 @@ Because pgAdmin docker image needs to access postgres docker image, they need to
 Create a new external docker network for postgres:
 ```sh
 # creates the postgres docker network
-docker network create garlaxy-postgres
-```
-
-Second, create two [docker volumes](https://docs.docker.com/storage/volumes/):
-- postgres-data: to store postgres data to avoid losing it every time your restart postgres container
-- pgadmin-data: to store pgAdmin configurations, to avoid losing your config every time you restart pgAdmin container
-
-```sh
-# create postgres-data volume
-docker volume create garlaxy-postgres-data
-# create pgadmin-data volume
-docker volume create garlaxy-pgadmin-data
+docker network create socrate-postgres
 ```
 
 Then, you can just run containers describe in `docker-compose.yaml` by typing:
@@ -49,194 +38,244 @@ docker-compose up -d
 # Creating postgres-14 ... done
 ```
 
+> Note: two volumes are created to store pgAdmin4 config and all postgres data.
+> those volumes are persisted until you remove them explicitly either:
+>   - with `docker volume rm` command
+>   - or with `docker compose down -v` (-v removes also container)
+
 Check if your containers are running:
 ```sh
-docker ps
+docker compose ps
 # you should see your two containers in the list
 ```
-
-> Note: if you need to redo or delete evrything:
-> - `docker-compose down` will remove all running container but NOT volumes and network, since they are external
-> - `docker volume rm garlaxy-postgres-data` to delete postgres data
-> - `docker volume rm garlaxy-pgadmin-data` to delete pgadmin data
-> - `docker network rm garlaxy-postgres` to delete postgres's docker network
 
 ### Connect to your database with pgAdmin
 
 You should be able to access PgAdmin on [localhost:8040](http://localhost:8040/)
-- usermail: arla@sigl.fr
-- password: sigl2022
+- usermail: socra@sigl.fr
+- password: sigl2023
 
 For PostgreSQL instance running locally, credentials are:
-- user: sigl2022
-- password: sigl2022
+- user: sigl2023
+- password: sigl2023
 
 > Note: default credentials are in the docker-compose file
 
 Once logged in add the local PostgreSQL:
 
-1. Add server: right click on Servers > Add server
+1. Register server: right click on Servers > Register server
 
 2. Enter a connection name (e.g. local)
 
-![create-server](docs/create-server.png)
+3. Configure pgAdmin to connect to the postgres container:
+- host: postgres-14
+- username: sigl2023
+- password: sigl2023
 
-3. Add the postgres containers info (user, password are both sigl2022)
-
-![create-server-connection](docs/create-connection.png)
-
-4. You should see postgres schema and sigl2022 schema in the server dropdown:
+4. You should see postgres schema and sigl2023 schema in the server dropdown:
 
 ![display-databases](docs/display-databases.png)
 
-## Step 2: Create Garlaxy's database schema
+## Step 2: Create database and tables
 
-First, let's create a database named `garlaxy`, using pgAdmin:
-- Right click on `Databases` under Server > local
-- Select `Create`
-- just set the name to `garlaxy` and some comment if you want.
-> Note: if you currious about how to do it in raw SQL, you can see real SQL code in the SQL tab
-- click `Save`
-![create-garlaxy-database](docs/create-garlaxy-database.png)
-
-Then, let's create Garlaxy's database core schema, with the following specifications:
-- A **user** can have one or more **order**
-- An **order** is made to one or more **contractor**
-- An **order** has a **delivery_status**
-- A **contractor** is associated to one or many **ressource**
-- A **ressource** belongs to one **planet** only
+Then, let's create Socrate's database core schema, with the following specifications:
+- A **customer** can have one or more **address**es
+- A **producer**:
+  - can deliver many **product**s
+  - can have one or more **address**
+- A **product**
+  - belongs to one or more **category**
+  - may or maynot have a **discount**
 
 Here is the corresponding entity-relation diagram (ERD), without table attributes:
 ![erd](docs/erd.svg)
 
+To create database and tables, we've created necessary SQL files, so you just have to run them.
 
-We've prepared a script to create those tables: [create-table.sql](scripts/create-tables.sql).
+Those SQL scripts lives inside [postgresql/scripts/](scripts/) folder.
 
-To run it, you need to send it to your docker container and run a `psql` command from there:
+This folder exists on your local machine but **not inside the postgres container**.
+
+Copy scripts to postgres container
 ```sh
-# First copy scripts to your running postgres container
 # from postgresql/
-docker cp scripts postgres-14:/tmp/
-# create tables by running the create-table scripts over
-# your garlaxy database
-docker exec -it postgres-14 psql -U sigl2022 -d garlaxy -f /tmp/scripts/create-tables.sql
+docker compose cp scripts postgres:/tmp/
+```
+
+- Create SOCRATE database (script uses [CREATE DATABASE](https://www.postgresql.org/docs/current/sql-createdatabase.html) SQL statement):
+```sh
+# from postgresql/
+docker compose exec postgres psql -U sigl2023 -f /tmp/scripts/create-database.sql
+```
+
+- Create SOCRATE's tables (script uses [CREATE TABLE](https://www.postgresql.org/docs/14/sql-createtable.html) SQL statement):
+```sh
+# from postgresql/
+docker compose exec postgres psql -U sigl2023 -d socrate -f /tmp/scripts/create-tables.sql
 ```
 
 You should see your tables in pgAdmin, under:
-Server > local > databases > garlaxy > Schemas > public > Tables
+Server > local > databases > socrate > Schemas > public > Tables
 
 Now we've created all tables, we need to add some data to it.
 
-## Step 3: Import test data to your database
+## Step 3: Import socrate data to your database
 
 You will use the [COPY](https://www.postgresql.org/docs/12/sql-copy.html) command of postgres to import some data that we provided you with.
 
-> Note: All test data lives under this `scripts/data` folder. It includes:
-> - 25 planets from previous workshop
-> - 26 resources from previous workshop
-> - 140+ [space related companies on data.world](https://data.world/l2sants/space-indrustry/workspace/file?filename=spaceCompanies.json)
-> - 1000 [usernames on data.world](https://data.world/pmlandwehr/metafilter-infodump-20170312/workspace/file?filename=usernames.csv)
-> - rest of data has been generated using [generate_orders.py python script](scripts/generate-orders.py)
+> Note: All test data lives under this `scripts/data` folder.
+> It's a split / generated data based on an from [french's gouvernement open dataset](https://www.data.gouv.fr/fr/). The original dataset for this workshop is ["produit sude de france"](./utils/produits-sud-de-france.csv)
+> We generated fake customer and customer addresses by sampling random geo location in a 250km radius from Dijon, France. Those positions are necessary for the computation of the carbon tax (based on the distance between producer address and customer address). We wrote [a python3 script to generate those random geo locations](./utils/generate-customer-addresses.py)
+> Same for product discounts, we just randomly attributed discounts on 20% of the products. We wrote [another python3 script to generate fake discounts](./utils/generate-discounts.py)
 
-To import it to your postgres database:
-1. copy the content of the `scripts` folder inside your running postgresql container:
+Load data from CSV files into `socrate` database:
 ```sh
-# from postgres/
-docker cp scripts postgres-14:/tmp/
-```
-2. import the csv file to your `garlaxy` database:
-```sh
+# From postgresql/
 # execute the SQL script to import data from CSV files (see. scripts/load-data.sql)
-docker exec -it postgres-14 psql -U sigl2022 -d garlaxy -f /tmp/scripts/load-data.sql
+docker compose exec postgres psql -U sigl2023 -d socrate -f /tmp/scripts/load-tables.sql
 # This may take a minute...
 # Output:
-# COPY 1000
-# COPY 25
-# COPY 26
-# COPY 154
-# COPY 320
-# COPY 3
-# COPY 100000
-# COPY 349983
-# COPY 100000
+# COPY ...
+# COPY ...
+# ...
 ```
-
-> Note: if you need to restart from fresh, you just need to type the following:
-> ```sh
-> # make sure you have scripts files
-> docker cp scripts postgres-14:/tmp/
-> # create tables (script will first drop tables then create them again)
-> docker exec -it postgres-14 psql -U sigl2022 -d garlaxy -f /tmp/scripts/create-tables.sql
-> # load data from CSV files
-> docker exec -it postgres-14 psql -U sigl2022 -d garlaxy -f /tmp/scripts/load-data.sql
-> ```
-
-## Step 4: Create views on your data for your web API
 
 To explore your data, you can directly query some rows using pgAdmin's UI on http://localhost:8040 
 
 **Important**: Make sure to refresh tables from the UI after loading data from previous step:
-- go to garlaxy database > Schemas > public
+- go to socrate database > Schemas > public
 - right click on Tables > Refresh
 
-Let's create a [view](https://www.postgresql.org/docs/9.2/sql-createview.html) for your ressource catalog in the frontend:
-- `planet_name`: user id of the owner of the help request
-- `ressource`: the username of the owner of the help requests
-- `price`: the id of the help request
+> **If you wish to start from scratch**, type the following commands:
+> ```sh
+> docker compose down -v
+> docker network rm socrate-postgres
+> ```
+> 
+> This will:
+> - delete both pgadmin and postgres container
+> - delete assiciated docker volumes
+> - delete the socrate-postgres network
+>
+
+## Step 4: Create a view for products on discount
+
+**Objective**: Let's create a [view](https://www.postgresql.org/docs/14/sql-createview.html) to query products on discount.
+
+> Note: VIEW and MATERIALIZED VIEWS are differents. MATERIALIZED VIEWS is a PostgreSQL only feature where VIEW are default SQL views.
+> You can read more here: https://www.postgresql.org/docs/14/rules-materializedviews.html
+
+Let's use the SQL query tool from pgadmin4 to query products on discount.
+![query-tool](docs/query-tool.png)
+
+We wish to select the follwing fields:
+- `product.id`: the product ID on discount
+- `product.name`: the product name on discount
+- `producer.description`: we want to put the producer description for product description
+- `image`: the `product.url_image` of the product
+- `product.price`: the original product price without discount
+- `discount`: the final price corresponding to `price - discount` rounded with 2 decimals
+- `product_discount.valid_until`: the deadline date for the discount (discount are only valid until a certain date)
+
+> Note: We want to match field names that you have in your backend/src/data/discounts_fr.json
+> This will prevent you from any payload adaption on the frontend side (when rendering products/discounts).
+
+To achieve this selection of table fields, you need to [JOIN](https://www.postgresql.org/docs/current/tutorial-join.html) `product` table with `product_discount` table on the `product id`.
+
+The computation of the `final_price` can be done directly in the `SELECT` statement using `ROUND` and `CAST` builtin:
+```sql
+SELECT
+  ...,
+  ROUND(CAST((product.price - product_discount.discount) AS NUMERIC), 2) as discount
+FROM ...
+```
+
+From your query tool in pgadmin4, type the following [JOIN](https://www.postgresql.org/docs/current/tutorial-join.html) query:
+```sql
+SELECT 
+  product.id,
+  product.name,
+  product.price,
+  product.url_image as image,
+  producer.description,
+  ROUND(CAST((product.price - product_discount.discount) AS NUMERIC), 2) as discount,
+  product_discount.valid_until
+FROM product
+JOIN product_discount
+ON product_discount.product_id = product.id
+JOIN producer
+ON producer.external_id = product.producer_external_id;
+```
+
+That's it! You should obtain all products on discounts.
+
+Now create a new `postgresql/scripts/create-views.sql` (same folder as other SQL scripts) file:
+```sql
+CREATE VIEW product_on_discount AS
+SELECT 
+  product.id,
+  product.name,
+  product.price,
+  product.url_image as image,
+  producer.description,
+  ROUND(CAST((product.price - product_discount.discount) AS NUMERIC), 2) as discount,
+  product_discount.valid_until
+FROM product
+JOIN product_discount
+ON product_discount.product_id = product.id
+JOIN producer
+ON producer.external_id = product.producer_external_id;
+```
+
+And run it on your local postgres:
+```sh
+# from postgresql/
+docker compose cp scritps postgres:/tmp/
+docker compose exec postgres psql -U sigl2023 -f /tmp/scripts/create-views.sql
+```
 
 From your pgAdmin UI, create a new view:
-- Right click on `garlaxy > Schemas > public > Views` menu and select `Create > View`
+- Right click on `socrate > Schemas > public > Views` menu and select `Create > View`
 - Name: `ressource_catalog`
 - In the `Code` tab, just copy/paste the following `SELECT` statement
 
+Now you can directly query your `product_on_discount` view:
+- from the query tool, run the following SQL statement:
 ```sql
- SELECT r.id,
-    p.name AS planete,
-    r.name AS ressource,
-    r.price AS prix
-   FROM planet p,
-    ressource r
-  WHERE p.id = r.planet_id;
-```
-- Save your view
-
-Now you can directly query your ressource catalog:
-- Open a new query tool editor:
-![query-tool](docs/query-tool.png)
-- type:
-```sql
-SELECT * FROM ressource_catalog;
-```
-- Run query by clicking on `play` icon or `(f5)`
-
-> Note: VIEW and MATERIALIZED VIEWS are differents. MATERIALIZED VIEWS is a PostgreSQL only feature where VIEW are default SQL views.
-> You can read more here: https://www.postgresql.org/docs/9.3/rules-materializedviews.html
-
-Create another view, using INNER JOIN to have an overview of orders with contractors.
-This view will be use in the mongodb part.
-
-From your pgAdmin UI, create a new view with name `orders_with_contractor` with the following SQL code:
-```sql
- SELECT otc.order_id,
-    o.created_at AS order_date,
-    r.name AS ressource,
-    c.name AS contractor,
-    u.username
-   FROM ordered_to_contractor otc
-     JOIN user_orders uo ON otc.order_id = uo.order_id
-     JOIN orders o ON uo.order_id = o.id
-     JOIN contractor c ON otc.contractor_id = c.id
-     JOIN ressource r ON otc.ressource_id = r.id
-     JOIN users u ON u.id = uo.user_id;
+SELECT * FROM product_on_discount;
 ```
 
-> Note: This view will be usefull for later!
+## Step 5 **Challenge**: Create a view of products in a category
 
-## Step 5: Expose your ressource catalog from your web API
+**Objective**:
+1. create `products_in_category` view with following field selection:
+  - `id`: the **product** unique id
+  - `name`: the name of the **product**
+  - `description`: the **producer** description
+  - `price`: the price of the **product** (ignore discounts)
+  - `image`: the product's image URL
+  - `categoryId`: the ID of the product's **category**
+  - `categoryName`: the name of the product's **category**
+1. add your `CREATE VIEW` statement to the `scripts/create-views.sql` script (keep the other view from previous step)
 
-**Objective**: adapt your groupe's backend to read data from postgresql
+Some hints:
+- you'll need 3 `JOIN` and start with the product table
+- use the query tool from pgadmin4 when building your query
+- use `product_id` and `category_id` from product_category table to join products and categories
+- join `producer.external_id` and `product.producer_external_id` to get access to the producer's description
+
+> Note: creating this view is **necessary** for next steps of this workshop
+
+## Step 6: Expose your ressource catalog from your web API
+
+**Objective**: Adapt your groupe's backend to read from PostgreSQL:
+- products on discount
+- products belonging to a category
+- all product categories
 
 From your group's API, you need to install a new node module to interact with Postgres: [node-postgres](https://node-postgres.com)
+
+### Query products on discount
 
 You will also install [dotenv](https://www.npmjs.com/package/dotenv) node module to manage database credentials on your different
 environments (your machine and scaleway).
@@ -255,17 +294,99 @@ From your groupeXX/backend folder, create a new `.env` file with:
 # inside backend/.env
 RDB_HOST=localhost
 RDB_PORT=5432
-RDB_DATABASE=garlaxy
-RDB_USER=sigl2022
-RDB_PASSWORD=sigl2022
+RDB_DATABASE=socrate
+RDB_USER=sigl2023
+RDB_PASSWORD=sigl2023
 ```
-> Note: you can look on [groupe's 13 .env file](https://github.com/arla-sigl-2022/groupe-13/pull/4/commits/2b4add960335137e5e248c1f2c899ca0d3d094b2?authenticity_token=oZuAuFViTpP2mUpw7Zb8iFLSNIWiM0%2FhJxB2xVkgXb4Ar5OTQxTegu833gGxS%2B2tHTv9qTHHF%2FzgqR37kspzCA%3D%3D&file-filters%5B%5D=.js&file-filters%5B%5D=dotfile#diff-1be57eb01a2c4a2d25ef8d2f4caada9bea1eefb6df15f8c37ac385b92708844a)
 
-Copy the follwing changes in your backend:
-- [backend/src/database.js](https://github.com/arla-sigl-2022/groupe-13/pull/4/commits/17cce83fbcb4b8cdcad0d7b53c64ed66b2235e6d#diff-f74254c83354678ae4a3a3205ddab3712d159c21db220b4793073cd2f429b8c9): you are getting rid of this hard-coded list of ressource, and consume data from your local postgreSQL instead
-- [backend/src/server.js](https://github.com/arla-sigl-2022/groupe-13/pull/4/commits/17cce83fbcb4b8cdcad0d7b53c64ed66b2235e6d#diff-36e2c2dd1e67a7419cef780285f514e743e48ac994a01526288acd31707e09ae): make your service `async` since consomming data from postgreSQL is asynchronous. Renamed `DB` to `RDB` (stands for Relational Data Base)
+> Note: RDB stands for **R**elational **D**ata**B**ase
 
-**Important**: Make sure your database is still running!
+- Create a new `backend/src/database.js` file with:
+```js
+const process = require("process");
+const { Pool } = require("pg");
+const dotenv = require("dotenv");
+
+dotenv.config();
+
+const RDB = {
+    // Create a pool of connection;
+    // to control number of concurrent connections.
+    // We leave default values for now.
+    // Credentials for the RDB comes from the .env file
+    pool: new Pool({
+      host: process.env.RDB_HOST,
+      port: +process.env.RDB_PORT, 
+      database: process.env.RDB_DATABASE,
+      user: process.env.RDB_USER,
+      password: process.env.RDB_PASSWORD,
+    }),
+  
+    /**
+     * Helper to run SQL query on postgres.
+     * @param {*} sql the query as string
+     * @returns a list of all rows matching the query
+     */
+    queryMany: async function (sql) {
+      // Get the next connection available in the pool
+      const client = await this.pool.connect();
+      const result = await client.query(sql);
+      // release the connection
+      client.release();
+      return result.rows;
+    },
+  
+    /**
+     * Query a page of products on discount 
+     * that are valid as of today
+     * @returns a list of discounts
+     */
+    getAvailableDiscounts: async function (page, limit) {
+      const rows = await this.queryMany(`
+        SELECT * from product_on_discount
+        LIMIT ${limit} OFFSET ${page};
+      `)
+      return rows;
+    }
+}
+
+module.export {
+  RDB
+};
+```
+This new `RDB` module contains:
+- `queryMany`: a helper function to help you query many rows providing sql code as string
+- `getProductDiscounts` which will read a page of product on discount from the view you've created in previous step
+- `dotenv.config()`: will load environment variables from the `.env` file created earlier. Environment variables are available in a global `process.env` object.
+
+> Note: Because we could have many data, your query forces `page` and `limit` argument.
+> This forces API consumer to query a limited amount of data.
+> This is necessary when you want to implement paging in frontend:
+>  - if `page = 0` and `limit = 10`, then the 10 first discounts will be return
+>  - if `page = 1` and `limit = 10`, then 11th - 20th disounts will be return
+> See. [LIMIT and OFFSET](https://www.postgresql.org/docs/current/queries-limit.html) SQL statement
+
+
+Then adapt your `/v1/discounts` route in `backend/src/server.js` with:
+```js
+// ...
+const { RDB } = require("./database");
+// ...
+
+app.get("/v1/discounts", async (req, res) => {
+  try {
+    const discounts = await RDB.getAvailableDiscounts(0, 4);
+    res.send(discounts);
+  } catch (e) {
+    res.send({ error: e.message });
+  }
+});
+// ...
+```
+
+- `async` keyword in the function's definition is necessary since reading data from postgreSQL is **asynchronous**.
+- `await RDB.getAvailableDiscounts(1, 4);` will wait to receive the 4 first available discounts before sending discounts back to the client
+- if anything goes wrong, server returns the error with the reason.
 
 Then, start your api:
 ```sh
@@ -283,32 +404,91 @@ nvm use v16
 npm start
 ```
 
-Login on your frontend, and you should see the ressource table, but this time the API is serving data from postgres.
+**Important**: Make sure your database is still running!
 
+Login on your frontend, and you should see discounts coming from your postgresql!
 
-## Step 6: Configure your API to log on the production database
+## Challenge: Query categories from your database
 
-We've deployed a database for each group on a separated Scaleway VM.
+**Objective**: Make your frontend query categories comming from PostgreSQL.
+- adapt `backend`: 
+  - create a new `getAllCategories()` function to read **all** data from the `category` table (no pages / limit necessary)
+  - create it in `backend/src/database.js`'s RDB object
+  - adapt your route in `backend/src/server.js` to use `getAllCategories` instead of the mock data in `backend/src/categories_fr.json`
+- `frontend` should not need any adaptions
+## Challenge: Query products in category from your database
 
-> Note: The production database is **not** open on internet but only in a private network
-> between your group's scaleway instances. This means you can access production database **only** from
-> your group's scaleway VM.
+**Objective**: Make your frontend query products in categroy comming from PostgreSQL.
+- adapt `backend`: 
+  - create a new `getProductsInCategory(categoryId, page, limit)` function to read a page of product matching the `categoryId` from the `products_in_category` view
+  - create it in `backend/src/database.js`'s RDB object
+  - adapt your route in `backend/src/server.js` to use `getProductsInCategory` instead of the mock data in `backend/src/products_fr.json`
+- `frontend` should not need any adaptions
 
-Each group will connect to its own database with the following credentials:
-- Database host: pro.postgres.arla-sigl.fr (same for all group)
-- Database name: garlaxy-group-XX
-- Database user: garlaxy-group-XX
-- Database password: garlaxy-group-XX
-- Database port: 5432
+## Step 7: Make it work on production
 
-You don't want to push database credentials on your github repository, so you will use github secrets (like for CI/CD workshop).
+We deployed a postgres for your application in production.
 
-From your Group's project on github. Go to Settings > Secrets and add secrets with the one above (adapting XX to your group number).
-![secrets](docs/secrets.png)
+The production database is **not** open on internet but only in a private network
+between your group's scaleway instances. 
 
-Adapt your .github/workflows/main.yml by overriding your `backend/.env` file before building your image. 
+This means you can access production database **only** from
+your group's scaleway VM.
 
-Copy the follwing change in your group's .github/workflows/ folder:
-- [.github/workflows/main.yml](https://github.com/arla-sigl-2022/groupe-13/pull/4/commits/17cce83fbcb4b8cdcad0d7b53c64ed66b2235e6d#diff-7829468e86c1cc5d5133195b5cb48e1ff6c75e3e9203777f6b2e379d9e4882b3): create/overwrite backend/.env's file with values from your github secrets (e.g. production DB credentials). This way, you don't have to push them in your code!
+### Create views on the production PostgreSQL
 
-Commit and push, and your web-api should read ressources catalog from database.
+You can connect to your postegres's production database from your local pgadmin4 instance
+using an `SSH Tunnel` to your scaleway VM.
+
+This means that pgadmin, for every query, will go first to your VM and then from the VM process the SQL queries.
+
+- Register a new server connection on your pgadmin4 running locally
+
+  - Copy your group's id_rsa into your pgadmin4's container:
+    ```sh
+    docker compose cp ~/path/to/ssh_key/group-XX-socra-sigl_id_rsa pgadmin4:/var/lib/pgadmin/storage/socra_sigl.fr/id_rsa
+sa
+    ```
+  - Make sure pgadmin can read this file:
+    ```
+    docker exec --user root pgadmin4 sh -c "chown pgadmin:root /var/lib/pgadmin/storage/socra_sigl.fr/id_rsa"
+    ```
+  - Register a new connection from pgAdmin4 (same as on your local postgres)
+    - in `Connection` tab:
+      - host: pro.postgres.socra-sigl.fr
+      - port: 5432
+      - username: groupXX
+      - password: groupxx
+    - in the `SSH Tunnel`:
+      - Host: groupXX.socra-sigl.fr
+      - user: sigl
+      - select `Identity file` and select the `/id_rsa` file
+
+### Adapt your CI/CD to load databases credentials
+
+- Add the following secrets to your github repository (from github UI):
+  - `RDB_HOST`: pro.postgres.socra-sigl.fr 
+  - `RDB_PORT`: 5432
+  - `RDB_DATABASE`: groupXX 
+  - `RDB_USER`: groupXX
+  - `RDB_PASSWORD`: groupXX
+- In your `.github/workflow/deploy.yaml` file, add a new step to create the `.env` file with `RDB` credentials read from your github account''
+s secret variables:
+```yaml
+  # ...
+  build-backend:
+    runs_on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup .env with github secrets for database
+        working-directory: backend
+        run: |
+          cat <<EOF > .env
+            RDB_HOST=${{ secrets.RDB_HOST }}
+            RDB_PORT=${{ secrets.RDB_PORT }}
+            RDB_DATABASE=${{ secrets.RDB_DATABASE }}
+            RDB_USER=${{ secrets.RDB_USER }}
+            RDB_PASSWORD=${{ secrets.RDB_PASSWORD }}
+          EOF
+  # ...
+```
