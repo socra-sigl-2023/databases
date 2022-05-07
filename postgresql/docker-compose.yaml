@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:14.2
+    container_name: postgres-14
+    networks:
+     - socrate-postgres
+    volumes:
+     - 'socrate-postgres-data:/var/lib/postgresql/data:rw'
+    environment:
+     - POSTGRES_PASSWORD=sigl2023
+     - POSTGRES_USER=sigl2023
+    ports:
+    - '5432:5432'
+  pgadmin4:
+    image: dpage/pgadmin4:6.8
+    container_name: pgadmin4
+    networks:
+     - socrate-postgres
+    volumes:
+     - 'socrate-pgadmin-data:/var/lib/pgadmin:rw'
+    environment:
+     - PGADMIN_DEFAULT_EMAIL=socra@sigl.fr
+     - PGADMIN_DEFAULT_PASSWORD=sigl2023
+    ports:
+     - '8040:80'
+
+networks:
+  socrate-postgres:
+    name: socrate-postgres
+
+volumes: 
+    socrate-postgres-data:
+    socrate-pgadmin-data:
