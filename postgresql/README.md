@@ -454,24 +454,52 @@ sa
     docker exec --user root pgadmin4 sh -c "chown pgadmin:root /var/lib/pgadmin/storage/socra_sigl.fr/id_rsa"
     ```
   - Register a new connection from pgAdmin4 (same as on your local postgres)
+    - in `General` tab:
+      - name: production
     - in `Connection` tab:
       - host: pro.postgres.socra-sigl.fr
       - port: 5432
-      - username: groupXX
-      - password: groupxx
+      - maintainance database: postgres
+      - username: socra-group-XX
+      - password: socra-group-XX
     - in the `SSH Tunnel`:
       - Host: groupXX.socra-sigl.fr
       - user: sigl
       - select `Identity file` and select the `/id_rsa` file
+- You should be able to save and see your production database
+
+- Create the two views from the previous steps using the pgadmin4 ui:
+  - go to Servers > production
+  - go to Databases > socra-group-XX > Schemas > public
+  - right click on Views > Create view
+    - in `General` tab
+      - name: product_on_discount
+    - in the `Code` tab, past **only your SELECT statement** (without the `CREATE VIEW ... AS`)
+    ```sql
+    SELECT 
+      product.id,
+      product.name,
+      product.price,
+      product.url_image as image,
+      producer.description,
+      ROUND(CAST((product.price - product_discount.discount) AS NUMERIC), 2) as discount,
+      product_discount.valid_until
+    FROM product
+    JOIN product_discount
+    ON product_discount.product_id = product.id
+    JOIN producer
+    ON producer.external_id = product.producer_external_id;
+    ```
+- Do the same process to create the `products_in_category` view
 
 ### Adapt your CI/CD to load databases credentials
 
 - Add the following secrets to your github repository (from github UI):
-  - `RDB_HOST`: pro.postgres.socra-sigl.fr 
+  - `RDB_HOST`: pro.postgres.socra-sigl.fr
   - `RDB_PORT`: 5432
-  - `RDB_DATABASE`: groupXX 
-  - `RDB_USER`: groupXX
-  - `RDB_PASSWORD`: groupXX
+  - `RDB_DATABASE`: socra-group-XX
+  - `RDB_USER`: socra-group-XX
+  - `RDB_PASSWORD`: socra-group-XX
 - In your `.github/workflow/deploy.yaml` file, add a new step to create the `.env` file with `RDB` credentials read from your github account''
 s secret variables:
 ```yaml

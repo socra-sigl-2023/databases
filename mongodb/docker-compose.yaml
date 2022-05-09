@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  mongodb:
+    image: mongo:5.0.8
+    container_name: mongo-5
+    volumes:
+    - 'socrate-mongo-data:/data/db'
+    environment:
+    - MONGO_INITDB_ROOT_USERNAME=sigl2023
+    - MONGO_INITDB_ROOT_PASSWORD=sigl2023
+    ports:
+    - '27017:27017'
+
+volumes: 
+  socrate-mongo-data:
