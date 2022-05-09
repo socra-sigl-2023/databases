@@ -77,7 +77,7 @@ You only talk about `collection` of `documents`.
 
 ### Create the orders collection
 
-Let's create a collection name "comments" inside socrate database, from Robot 3T:
+Let's create a collection name `orders` inside socrate database, from Robot 3T:
 1. click `socrate` > right click `Collections` > add `Collection`
 1. add `orders` as Collection name
 
@@ -101,11 +101,9 @@ You're all set!
 
 ## Step 3: Load some orders
 
-> Note: comments are not really matching our garlarxy ressources, but it will do for our case!
-
 This script is based on large file that we can't push on this repository.
 
-Download [comments.tsv (https://files.groupe30.arla-sigl.fr/orders.json)](https://files.groupe30.socra-sigl.fr/data/orders.json) file and place it inside `scripts/data/orders.json` folder:
+Download [orders.json (https://files.groupe30.arla-sigl.fr/orders.json)](https://files.groupe30.socra-sigl.fr/data/orders.json) file and place it inside `scripts/data/orders.json` folder:
 
 ```sh
 # from databases/mongodb/scripts/data/
@@ -394,4 +392,4 @@ You only have to adapt the existing `.env creation step` in your github workflow
 
 You should be all set!
 
-Just commit/push and you should be able to read comments from your group's project URL (e.g. groupXX.socra-sigl.fr)
+Just commit/push to trigger the deployment.
