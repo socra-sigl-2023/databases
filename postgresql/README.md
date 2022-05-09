@@ -447,7 +447,6 @@ This means that pgadmin, for every query, will go first to your VM and then from
   - Copy your group's id_rsa into your pgadmin4's container:
     ```sh
     docker compose cp ~/path/to/ssh_key/group-XX-socra-sigl_id_rsa pgadmin4:/var/lib/pgadmin/storage/socra_sigl.fr/id_rsa
-sa
     ```
   - Make sure pgadmin can read this file:
     ```
