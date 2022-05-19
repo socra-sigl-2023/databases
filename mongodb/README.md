@@ -13,11 +13,11 @@ You will use this database to manage orders of your users.
 
 Like for postgres, you will use a `docker` setup.
 
-Use the `docker-compose` provided:
+Use the `docker-compose.yml` provided:
 
 ```bash
 # start mongo containers
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Query mongo
