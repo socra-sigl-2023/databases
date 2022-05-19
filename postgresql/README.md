@@ -33,7 +33,7 @@ Then, you can just run containers describe in `docker-compose.yaml` by typing:
 ```sh
 # start containers describe in the docker-compose.yaml file
 # in daemon mode. Meaning, you'll start your containers in background
-docker-compose up -d
+docker compose up -d
 # Creating pgadmin4    ... done
 # Creating postgres-14 ... done
 ```
