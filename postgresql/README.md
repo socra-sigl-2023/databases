@@ -132,7 +132,7 @@ Load data from CSV files into `socrate` database:
 ```sh
 # From postgresql/
 # execute the SQL script to import data from CSV files (see. scripts/load-data.sql)
-docker compose exec postgres psql -U sigl2023 -d socrate -f /tmp/scripts/load-tables.sql
+docker compose exec postgres psql -U sigl2023 -d socrate -f /tmp/scripts/load-data.sql
 # This may take a minute...
 # Output:
 # COPY ...
@@ -230,8 +230,8 @@ ON producer.external_id = product.producer_external_id;
 And run it on your local postgres:
 ```sh
 # from postgresql/
-docker compose cp scritps postgres:/tmp/
-docker compose exec postgres psql -U sigl2023 -f /tmp/scripts/create-views.sql
+docker compose cp scripts postgres:/tmp/
+docker compose exec postgres psql -U sigl2023 -d socrate -f /tmp/scripts/create-views.sql
 ```
 
 From your pgAdmin UI, create a new view:
@@ -350,7 +350,7 @@ const RDB = {
     }
 }
 
-module.export {
+module.exports = {
   RDB
 };
 ```

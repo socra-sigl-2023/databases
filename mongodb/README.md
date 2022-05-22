@@ -13,7 +13,7 @@ You will use this database to manage orders of your users.
 
 Like for postgres, you will use a `docker` setup.
 
-Use the `docker-compose.yml` provided:
+Use the `docker-compose` provided:
 
 ```bash
 # start mongo containers
@@ -103,7 +103,7 @@ You're all set!
 
 This script is based on large file that we can't push on this repository.
 
-Download [orders.json (https://files.groupe30.arla-sigl.fr/orders.json)](https://files.groupe30.socra-sigl.fr/data/orders.json) file and place it inside `scripts/data/orders.json` folder:
+Download [orders.json (https://files.group30.socra-sigl.fr/orders.json)](https://files.group30.socra-sigl.fr/orders.json) file and place it inside `scripts/data/orders.json` folder:
 
 ```sh
 # from databases/mongodb/scripts/data/
